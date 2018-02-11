@@ -1,9 +1,41 @@
 
 #include "ngx_http_vhost_traffic_status_module.h"
 #include "ngx_http_vhost_traffic_status_prom_display.h"
-//#include "ngx_http_vhost_traffic_status_shm.h"
+#include "ngx_http_vhost_traffic_status_shm.h"
 //#include "ngx_http_vhost_traffic_status_filter.h"
 //#include "ngx_http_vhost_traffic_status_display.h"
+
+u_char *
+ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
+                                               u_char *buf)
+{
+    ngx_atomic_int_t                           ap, hn, ac, rq, rd, wr, wa;
+//    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+//    ngx_http_vhost_traffic_status_shm_info_t  *shm_info;
+//
+//    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
+
+    ap = *ngx_stat_accepted;
+    hn = *ngx_stat_handled;
+    ac = *ngx_stat_active;
+    rq = *ngx_stat_requests;
+    rd = *ngx_stat_reading;
+    wr = *ngx_stat_writing;
+    wa = *ngx_stat_waiting;
+
+//    shm_info = ngx_pcalloc(r->pool, sizeof(ngx_http_vhost_traffic_status_shm_info_t));
+//    if (shm_info == NULL) {
+//        return buf;
+//    }
+
+//    ngx_http_vhost_traffic_status_shm_info(r, shm_info);
+
+    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN,
+                      ap, ac, hn, rd, rq, wa, wr
+                      );
+
+    return buf;
+}
 
 u_char *
 ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
@@ -12,22 +44,21 @@ ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
 //    u_char                                    *o, *s;
 //    ngx_rbtree_node_t                         *node;
 //    ngx_http_vhost_traffic_status_ctx_t       *ctx;
-//    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
-//
+    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+
 //    ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
-//
-//    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
-//
+
+    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
+
 //    node = ctx->rbtree->root;
-//
-//    /* init stats */
-//    ngx_memzero(&vtscf->stats, sizeof(vtscf->stats));
-//    ngx_http_vhost_traffic_status_node_time_queue_init(&vtscf->stats.stat_request_times);
-//
-//    /* main & connections */
-//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_S);
-//
-//    buf = ngx_http_vhost_traffic_status_display_set_main(r, buf);
+
+    /* init stats */
+    ngx_memzero(&vtscf->stats, sizeof(vtscf->stats));
+    ngx_http_vhost_traffic_status_node_time_queue_init(&vtscf->stats.stat_request_times);
+
+    /* main & connections */
+
+    buf = ngx_http_vhost_traffic_status_prom_display_set_main(r, buf);
 //
 //    /* serverZones */
 //    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_SERVER_S);
@@ -97,7 +128,7 @@ ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
 //    }
 //#endif
 //
-    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_HEADER);
+//  buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_HEADER);
 
     return buf;
 }
