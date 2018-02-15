@@ -10,10 +10,10 @@ ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
                                                u_char *buf)
 {
     ngx_atomic_int_t                           ap, hn, ac, rq, rd, wr, wa;
-//    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
 //    ngx_http_vhost_traffic_status_shm_info_t  *shm_info;
 //
-//    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
+    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
     ap = *ngx_stat_accepted;
     hn = *ngx_stat_handled;
@@ -31,6 +31,7 @@ ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
 //    ngx_http_vhost_traffic_status_shm_info(r, shm_info);
 
     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN,
+                      &ngx_cycle->hostname, NGINX_VERSION, (ngx_current_msec - vtscf->start_msec) / 1000.0,
                       ap, ac, hn, rd, rq, wa, wr
                       );
 

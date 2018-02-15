@@ -4,6 +4,9 @@
 
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_HEADER   "# test\n"
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN  \
+    "# HELP nginx_server_uptime nginx uptime and server info\n" \
+    "# TYPE nginx_server_uptime counter\n" \
+    "nginx_server_uptime{hostname=\"%V\",version=\"%s\"} %f\n" \
     "# HELP nginx_server_connections nginx connections\n" \
     "# TYPE nginx_server_connections gauge\n" \
     "nginx_server_connections{status=\"accepted\"} %uA\n" \
