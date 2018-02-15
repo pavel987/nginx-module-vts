@@ -228,6 +228,208 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
 }
 
 u_char *
+ngx_http_vhost_traffic_status_prom_display_set_upstream_group(ngx_http_request_t *r,
+                                                         u_char *buf)
+{
+    size_t                                 len;
+    u_char                                *p, *o, *s;
+    uint32_t                               hash;
+    unsigned                               type, zone;
+    ngx_int_t                              rc;
+    ngx_str_t                              key, dst;
+    ngx_uint_t                             i, j;
+    ngx_rbtree_node_t                     *node;
+    ngx_http_upstream_server_t            *us, usn;
+#if (NGX_HTTP_UPSTREAM_ZONE)
+    ngx_http_upstream_rr_peer_t           *peer;
+    ngx_http_upstream_rr_peers_t          *peers;
+#endif
+    ngx_http_upstream_srv_conf_t          *uscf, **uscfp;
+    ngx_http_upstream_main_conf_t         *umcf;
+    ngx_http_vhost_traffic_status_ctx_t   *ctx;
+    ngx_http_vhost_traffic_status_node_t  *vtsn;
+
+    ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
+    umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
+    uscfp = umcf->upstreams.elts;
+
+    len = 0;
+    for (i = 0; i < umcf->upstreams.nelts; i++) {
+        uscf = uscfp[i];
+        len = ngx_max(uscf->host.len, len);
+    }
+
+    dst.len = len + sizeof("@[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:65535") - 1;
+    dst.data = ngx_pnalloc(r->pool, dst.len);
+    if (dst.data == NULL) {
+        return buf;
+    }
+
+    p = dst.data;
+
+    for (i = 0; i < umcf->upstreams.nelts; i++) {
+
+        uscf = uscfp[i];
+
+        /* groups */
+        if (uscf->servers && !uscf->port) {
+            us = uscf->servers->elts;
+
+            type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UG;
+
+            o = buf;
+            // TODO host comes from here
+            buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S,
+                              &uscf->host);
+            s = buf;
+
+            zone = 0;
+
+#if (NGX_HTTP_UPSTREAM_ZONE)
+            if (uscf->shm_zone == NULL) {
+                goto not_supported;
+            }
+
+            zone = 1;
+
+            peers = uscf->peer.data;
+
+            ngx_http_upstream_rr_peers_rlock(peers);
+
+            for (peer = peers->peer; peer; peer = peer->next) {
+                p = ngx_cpymem(p, uscf->host.data, uscf->host.len);
+                *p++ = NGX_HTTP_VHOST_TRAFFIC_STATUS_KEY_SEPARATOR;
+                p = ngx_cpymem(p, peer->name.data, peer->name.len);
+
+                dst.len = uscf->host.len + sizeof("@") - 1 + peer->name.len;
+
+                rc = ngx_http_vhost_traffic_status_node_generate_key(r->pool, &key, &dst, type);
+                if (rc != NGX_OK) {
+                    ngx_http_upstream_rr_peers_unlock(peers);
+                    return buf;
+                }
+
+                hash = ngx_crc32_short(key.data, key.len);
+                node = ngx_http_vhost_traffic_status_node_lookup(ctx->rbtree, &key, hash);
+
+                usn.weight = peer->weight;
+                usn.max_fails = peer->max_fails;
+                usn.fail_timeout = peer->fail_timeout;
+                usn.backup = 0;
+                usn.down = peer->down;
+
+#if nginx_version > 1007001
+                usn.name = peer->name;
+#endif
+
+                if (node != NULL) {
+                    vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+#if nginx_version > 1007001
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
+#else
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &peer->name);
+#endif
+
+                } else {
+#if nginx_version > 1007001
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
+#else
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL, &peer->name);
+#endif
+                }
+
+                p = dst.data;
+            }
+
+            ngx_http_upstream_rr_peers_unlock(peers);
+
+not_supported:
+
+#endif
+
+            for (j = 0; j < uscf->servers->nelts; j++) {
+                usn = us[j];
+
+                if (zone && usn.backup != 1) {
+                    continue;
+                }
+
+                if (us[j].addrs == NULL) {
+                    continue;
+                }
+
+                p = ngx_cpymem(p, uscf->host.data, uscf->host.len);
+                *p++ = NGX_HTTP_VHOST_TRAFFIC_STATUS_KEY_SEPARATOR;
+                p = ngx_cpymem(p, us[j].addrs->name.data, us[j].addrs->name.len);
+
+                dst.len = uscf->host.len + sizeof("@") - 1 + us[j].addrs->name.len;
+
+                rc = ngx_http_vhost_traffic_status_node_generate_key(r->pool, &key, &dst, type);
+                if (rc != NGX_OK) {
+                    return buf;
+                }
+
+                hash = ngx_crc32_short(key.data, key.len);
+                node = ngx_http_vhost_traffic_status_node_lookup(ctx->rbtree, &key, hash);
+
+#if nginx_version > 1007001
+                usn.name = us[j].addrs->name;
+#endif
+
+                if (node != NULL) {
+                    vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+#if nginx_version > 1007001
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
+#else
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &us[j].addrs->name);
+#endif
+
+                } else {
+#if nginx_version > 1007001
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
+#else
+                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL, &us[j].addrs->name);
+#endif
+                }
+
+                p = dst.data;
+            }
+
+            if (s == buf) {
+                buf = o;
+
+            } else {
+                buf--;
+                buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
+                buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
+            }
+        }
+    }
+
+    /* alones */
+    o = buf;
+
+    ngx_str_set(&key, "::nogroups");
+
+    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S, &key);
+
+    s = buf;
+
+    buf = ngx_http_vhost_traffic_status_display_set_upstream_alone(r, buf, ctx->rbtree->root);
+
+    if (s == buf) {
+        buf = o;
+
+    } else {
+        buf--;
+        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
+        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
+    }
+
+    return buf;
+}
+
+u_char *
 ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
                                           u_char *buf)
 {
@@ -261,24 +463,11 @@ ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
 
     buf = ngx_http_vhost_traffic_status_prom_display_set_filter(r, buf, node);
 
-//
-//    /* upstreamZones */
-//    o = buf;
-//
-//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_UPSTREAM_S);
-//
-//    s = buf;
-//
-//    buf = ngx_http_vhost_traffic_status_display_set_upstream_group(r, buf);
-//
-//    if (s == buf) {
-//        buf = o;
-//        buf--;
-//
-//    } else {
-//        buf--;
-//        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
-//    }
+
+    /* upstreamZones */
+
+    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_group(r, buf);
+
 //
 //#if (NGX_HTTP_CACHE)
 //    /* cacheZones */

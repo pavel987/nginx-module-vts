@@ -63,18 +63,44 @@
     "nginx_filter_cache{status=\"hit\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_cache{status=\"scarce\",filter=\"%V\",filterName=\"%V\"} %uA\n"
 
-#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE \
-    "# HELP nginx_cache_requests cache requests counter\n" \
-    "# TYPE nginx_cache_requests counter\n" \
-    "\"miss\":%uA,"                                                            \
-    "\"bypass\":%uA,"                                                          \
-    "\"expired\":%uA,"                                                         \
-    "\"stale\":%uA,"                                                           \
-    "\"updating\":%uA,"                                                        \
-    "\"revalidated\":%uA,"                                                     \
-    "\"hit\":%uA,"                                                             \
-    "\"scarce\":%uA"
-
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM "{\"server\":\"%V\","  \
+    "\"requestCounter\":%uA,"                                                  \
+    "\"inBytes\":%uA,"                                                         \
+    "\"outBytes\":%uA,"                                                        \
+    "\"responses\":{"                                                          \
+    "\"1xx\":%uA,"                                                             \
+    "\"2xx\":%uA,"                                                             \
+    "\"3xx\":%uA,"                                                             \
+    "\"4xx\":%uA,"                                                             \
+    "\"5xx\":%uA"                                                              \
+    "},"                                                                       \
+    "\"requestMsec\":%M,"                                                      \
+    "\"requestMsecs\":{"                                                       \
+    "\"times\":[%s],"                                                          \
+    "\"msecs\":[%s]"                                                           \
+    "},"                                                                       \
+    "\"responseMsec\":%M,"                                                     \
+    "\"responseMsecs\":{"                                                      \
+    "\"times\":[%s],"                                                          \
+    "\"msecs\":[%s]"                                                           \
+    "},"                                                                       \
+    "\"weight\":%ui,"                                                          \
+    "\"maxFails\":%ui,"                                                        \
+    "\"failTimeout\":%T,"                                                      \
+    "\"backup\":%s,"                                                           \
+    "\"down\":%s,"                                                             \
+    "\"overCounts\":{"                                                         \
+    "\"maxIntegerSize\":%s,"                                                   \
+    "\"requestCounter\":%uA,"                                                  \
+    "\"inBytes\":%uA,"                                                         \
+    "\"outBytes\":%uA,"                                                        \
+    "\"1xx\":%uA,"                                                             \
+    "\"2xx\":%uA,"                                                             \
+    "\"3xx\":%uA,"                                                             \
+    "\"4xx\":%uA,"                                                             \
+    "\"5xx\":%uA"                                                              \
+    "}"                                                                        \
+    "},"
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
                                                   u_char *buf);
@@ -88,6 +114,9 @@ u_char *ngx_http_vhost_traffic_status_prom_display_set_server_node(
 u_char *ngx_http_vhost_traffic_status_prom_display_set_filter(
         ngx_http_request_t *r, u_char *buf,
         ngx_rbtree_node_t *node);
+
+u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_group(
+        ngx_http_request_t *r, u_char *buf);
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set_main(
         ngx_http_request_t *r, u_char *buf);
