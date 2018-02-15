@@ -40,8 +40,6 @@
     "nginx_filter_bytes{direction=\"in\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_bytes{direction=\"out\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "# HELP nginx_filter_requestMsec average of request processing times in milliseconds\n" \
-    "# TYPE nginx_filter_requestMsec gauge\n" \
-    "nginx_filter_requestMsec{filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "# HELP nginx_filter_requests requests counter\n" \
     "# TYPE nginx_filter_requests counter\n" \
     "nginx_filter_requests{code=\"1xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
@@ -49,7 +47,21 @@
     "nginx_filter_requests{code=\"3xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"4xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"5xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
-    "nginx_filter_requests{code=\"total\",filter=\"%V\",filterName=\"%V\"} %uA\n"
+    "nginx_filter_requests{code=\"total\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "# TYPE nginx_filter_requestMsec gauge\n" \
+    "nginx_filter_requestMsec{filter=\"%V\",filterName=\"%V\"} %uA\n"
+
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER_CACHE \
+    "# HELP nginx_filter_cache filter cache requests\n" \
+    "# TYPE nginx_filter_cache counter\n" \
+    "nginx_filter_cache{status=\"miss\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"bypass\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"expired\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"stale\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"updating\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"revalidated\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"hit\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_cache{status=\"scarce\",filter=\"%V\",filterName=\"%V\"} %uA\n"
 
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE \
     "# HELP nginx_cache_requests cache requests counter\n" \

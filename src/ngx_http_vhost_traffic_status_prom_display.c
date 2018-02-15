@@ -171,12 +171,12 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
                     key.data = vtsn->data;
                     key.len = vtsn->len;
 
-                    (void) ngx_http_vhost_traffic_status_node_position_key(&key, 2);
+                    (void) ngx_http_vhost_traffic_status_node_position_key(&key, 1);
 
                     filter_name.data = vtsn->data;
                     filter_name.len = vtsn->len;
 
-                    (void) ngx_http_vhost_traffic_status_node_position_key(&filter_name, 1);
+                    (void) ngx_http_vhost_traffic_status_node_position_key(&filter_name, 2);
 
                     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER,
                                       &key, &filter_name, vtsn->stat_in_bytes,
@@ -188,8 +188,20 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
                                       &key, &filter_name, vtsn->stat_5xx_counter,
                                       &key, &filter_name, vtsn->stat_request_counter,
                                       &key, &filter_name, ngx_http_vhost_traffic_status_node_time_queue_average(
-                                    &vtsn->stat_request_times, vtscf->average_method,
-                                    vtscf->average_period));
+                                      &vtsn->stat_request_times, vtscf->average_method,
+                                      vtscf->average_period));
+
+#if (NGX_HTTP_CACHE)
+                    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER_CACHE,
+                                      &key, &filter_name, vtsn->stat_cache_miss_counter,
+                                      &key, &filter_name, vtsn->stat_cache_bypass_counter,
+                                      &key, &filter_name, vtsn->stat_cache_expired_counter,
+                                      &key, &filter_name, vtsn->stat_cache_stale_counter,
+                                      &key, &filter_name, vtsn->stat_cache_updating_counter,
+                                      &key, &filter_name, vtsn->stat_cache_revalidated_counter,
+                                      &key, &filter_name, vtsn->stat_cache_hit_counter,
+                                      &key, &filter_name, vtsn->stat_cache_scarce_counter);
+#endif
 
                 }
 
