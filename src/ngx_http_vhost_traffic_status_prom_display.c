@@ -2,7 +2,7 @@
 #include "ngx_http_vhost_traffic_status_module.h"
 #include "ngx_http_vhost_traffic_status_prom_display.h"
 #include "ngx_http_vhost_traffic_status_shm.h"
-//#include "ngx_http_vhost_traffic_status_filter.h"
+#include "ngx_http_vhost_traffic_status_filter.h"
 //#include "ngx_http_vhost_traffic_status_display.h"
 
 u_char *
@@ -120,6 +120,101 @@ ngx_http_vhost_traffic_status_prom_display_set_server_node(
 }
 
 u_char *
+ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
+                                                 u_char *buf, ngx_rbtree_node_t *node)
+{
+    ngx_str_t                                     key, filter_name;
+    ngx_uint_t                                    i, j, n, rc;
+    ngx_array_t                                  *filter_keys, *filter_nodes;
+    ngx_http_vhost_traffic_status_filter_key_t   *keys;
+    ngx_http_vhost_traffic_status_filter_node_t  *nodes;
+    ngx_http_vhost_traffic_status_node_t         *vtsn;
+    ngx_http_vhost_traffic_status_loc_conf_t     *vtscf;
+
+    /* init array */
+    filter_keys = NULL;
+    filter_nodes = NULL;
+
+    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
+
+    rc = ngx_http_vhost_traffic_status_filter_get_keys(r, &filter_keys, node);
+
+    if (filter_keys != NULL && rc == NGX_OK) {
+        keys = filter_keys->elts;
+        n = filter_keys->nelts;
+
+        if (n > 1) {
+            ngx_qsort(keys, (size_t) n,
+                      sizeof(ngx_http_vhost_traffic_status_filter_key_t),
+                      ngx_http_traffic_status_filter_cmp_keys);
+        }
+
+        ngx_memzero(&key, sizeof(ngx_str_t));
+
+        for (i = 0; i < n; i++) {
+            if (keys[i].key.len == key.len) {
+                if (ngx_strncmp(keys[i].key.data, key.data, key.len) == 0) {
+                    continue;
+                }
+            }
+            key = keys[i].key;
+
+            rc = ngx_http_vhost_traffic_status_filter_get_nodes(r, &filter_nodes, &key, node);
+
+            if (filter_nodes != NULL && rc == NGX_OK) {
+
+                nodes = filter_nodes->elts;
+                for (j = 0; j < filter_nodes->nelts; j++) {
+                    vtsn = nodes[j].node;
+
+                    key.data = vtsn->data;
+                    key.len = vtsn->len;
+
+                    (void) ngx_http_vhost_traffic_status_node_position_key(&key, 2);
+
+                    filter_name.data = vtsn->data;
+                    filter_name.len = vtsn->len;
+
+                    (void) ngx_http_vhost_traffic_status_node_position_key(&filter_name, 1);
+
+                    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER,
+                                      &key, &filter_name, vtsn->stat_in_bytes,
+                                      &key, &filter_name, vtsn->stat_out_bytes,
+                                      &key, &filter_name, vtsn->stat_1xx_counter,
+                                      &key, &filter_name, vtsn->stat_2xx_counter,
+                                      &key, &filter_name, vtsn->stat_3xx_counter,
+                                      &key, &filter_name, vtsn->stat_4xx_counter,
+                                      &key, &filter_name, vtsn->stat_5xx_counter,
+                                      &key, &filter_name, vtsn->stat_request_counter,
+                                      &key, &filter_name, ngx_http_vhost_traffic_status_node_time_queue_average(
+                                    &vtsn->stat_request_times, vtscf->average_method,
+                                    vtscf->average_period));
+
+                }
+
+                /* destroy array to prevent duplication */
+                if (filter_nodes != NULL) {
+                    filter_nodes = NULL;
+                }
+            }
+
+        }
+
+        /* destroy array */
+        for (i = 0; i < n; i++) {
+            if (keys[i].key.data != NULL) {
+                ngx_pfree(r->pool, keys[i].key.data);
+            }
+        }
+        if (filter_keys != NULL) {
+            filter_keys = NULL;
+        }
+    }
+
+    return buf;
+}
+
+u_char *
 ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
                                           u_char *buf)
 {
@@ -148,28 +243,11 @@ ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
 
     buf = ngx_http_vhost_traffic_status_prom_display_set_server_node(r, buf, &vtscf->sum_key,
                                                                 &vtscf->stats);
-//
-//    buf--; // FIXME wtf is this for?
-//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
-//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
 
-//    /* filterZones */
-//    o = buf;
-//
-//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_FILTER_S);
-//
-//    s = buf;
-//
-//    buf = ngx_http_vhost_traffic_status_display_set_filter(r, buf, node);
-//
-//    if (s == buf) {
-//        buf = o;
-//
-//    } else {
-//        buf--;
-//        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
-//        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
-//    }
+    /* filterZones */
+
+    buf = ngx_http_vhost_traffic_status_prom_display_set_filter(r, buf, node);
+
 //
 //    /* upstreamZones */
 //    o = buf;

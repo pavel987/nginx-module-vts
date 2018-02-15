@@ -31,6 +31,23 @@
     "# TYPE nginx_server_requestMsec gauge\n" \
     "nginx_server_requestMsec{host=\"%V\"} %M\n"
 
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER \
+    "# HELP nginx_filter_bytes request/response bytes\n" \
+    "# TYPE nginx_filter_bytes counter\n" \
+    "nginx_filter_bytes{direction=\"in\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_bytes{direction=\"out\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "# HELP nginx_filter_requestMsec average of request processing times in milliseconds\n" \
+    "# TYPE nginx_filter_requestMsec gauge\n" \
+    "nginx_filter_requestMsec{filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "# HELP nginx_filter_requests requests counter\n" \
+    "# TYPE nginx_filter_requests counter\n" \
+    "nginx_filter_requests{code=\"1xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_requests{code=\"2xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_requests{code=\"3xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_requests{code=\"4xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_requests{code=\"5xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
+    "nginx_filter_requests{code=\"total\",filter=\"%V\",filterName=\"%V\"} %uA\n"
+
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE \
     "# HELP nginx_cache_requests cache requests counter\n" \
     "# TYPE nginx_cache_requests counter\n" \
@@ -53,6 +70,9 @@ u_char *ngx_http_vhost_traffic_status_prom_display_set_server_node(
         ngx_http_request_t *r,
         u_char *buf, ngx_str_t *key,
         ngx_http_vhost_traffic_status_node_t *vtsn);
+u_char *ngx_http_vhost_traffic_status_prom_display_set_filter(
+        ngx_http_request_t *r, u_char *buf,
+        ngx_rbtree_node_t *node);
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set_main(
         ngx_http_request_t *r, u_char *buf);
