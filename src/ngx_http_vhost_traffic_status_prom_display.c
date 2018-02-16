@@ -3,7 +3,7 @@
 #include "ngx_http_vhost_traffic_status_prom_display.h"
 #include "ngx_http_vhost_traffic_status_shm.h"
 #include "ngx_http_vhost_traffic_status_filter.h"
-//#include "ngx_http_vhost_traffic_status_display.h"
+#include "ngx_http_vhost_traffic_status_display.h"
 
 u_char *
 ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
@@ -228,11 +228,119 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
 }
 
 u_char *
+ngx_http_vhost_traffic_status_prom_display_set_upstream_node(ngx_http_request_t *r,
+                                                        u_char *buf, ngx_http_upstream_server_t *us,
+                                                        ngx_str_t *upstream_name,
+#if nginx_version > 1007001
+        ngx_http_vhost_traffic_status_node_t *vtsn
+#else
+                                                        ngx_http_vhost_traffic_status_node_t *vtsn, ngx_str_t *name
+#endif
+)
+{
+    ngx_int_t                                  rc;
+    ngx_str_t                                  key;
+    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+
+    vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
+
+#if nginx_version > 1007001
+    rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &key, &us->name);
+#else
+    rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &key, name);
+#endif
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "display_set_upstream_node::escape_json_pool() failed");
+    }
+
+    if (vtsn != NULL) {
+        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM,
+                          upstream_name, &key, vtsn->stat_in_bytes,
+                          upstream_name, &key, vtsn->stat_out_bytes,
+                          upstream_name, &key, ngx_http_vhost_traffic_status_node_time_queue_average(
+                                  &vtsn->stat_request_times, vtscf->average_method,
+                                  vtscf->average_period),
+                          upstream_name, &key, ngx_http_vhost_traffic_status_node_time_queue_average(
+                                  &vtsn->stat_upstream.response_times, vtscf->average_method,
+                                  vtscf->average_period),
+                          upstream_name, &key, vtsn->stat_request_counter,
+                          upstream_name, &key, vtsn->stat_1xx_counter,
+                          upstream_name, &key, vtsn->stat_2xx_counter,
+                          upstream_name, &key, vtsn->stat_3xx_counter,
+                          upstream_name, &key, vtsn->stat_4xx_counter,
+                          upstream_name, &key, vtsn->stat_5xx_counter);
+
+    }else {
+        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, (ngx_atomic_uint_t) 0);
+    }
+
+    return buf;
+}
+
+u_char *
+ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(ngx_http_request_t *r,
+                                                         u_char *buf, ngx_rbtree_node_t *node, ngx_str_t *upstream_name)
+{
+    unsigned                               type;
+    ngx_str_t                              key;
+    ngx_http_upstream_server_t             us;
+    ngx_http_vhost_traffic_status_ctx_t   *ctx;
+    ngx_http_vhost_traffic_status_node_t  *vtsn;
+
+    ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
+
+    type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UA;
+
+    if (node != ctx->rbtree->sentinel) {
+        vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+
+        if (vtsn->stat_upstream.type == type) {
+            key.len = vtsn->len;
+            key.data = vtsn->data;
+
+            (void) ngx_http_vhost_traffic_status_node_position_key(&key, 1);
+
+#if nginx_version > 1007001
+            us.name = key;
+#endif
+            us.weight = 0;
+            us.max_fails = 0;
+            us.fail_timeout = 0;
+            us.down = 0;
+            us.backup = 0;
+
+#if nginx_version > 1007001
+            buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &us, upstream_name, vtsn);
+#else
+            buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &us, upstream_name, vtsn, &key);
+#endif
+        }
+
+        buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(r, buf, node->left, upstream_name);
+        buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(r, buf, node->right, upstream_name);
+    }
+
+    return buf;
+}
+
+u_char *
 ngx_http_vhost_traffic_status_prom_display_set_upstream_group(ngx_http_request_t *r,
                                                          u_char *buf)
 {
     size_t                                 len;
-    u_char                                *p, *o, *s;
+    u_char                                *p;
     uint32_t                               hash;
     unsigned                               type, zone;
     ngx_int_t                              rc;
@@ -277,12 +385,9 @@ ngx_http_vhost_traffic_status_prom_display_set_upstream_group(ngx_http_request_t
 
             type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UG;
 
-            o = buf;
             // TODO host comes from here
-            buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S,
-                              &uscf->host);
-            s = buf;
-
+//            buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S,
+//                              &uscf->host);
             zone = 0;
 
 #if (NGX_HTTP_UPSTREAM_ZONE)
@@ -325,16 +430,18 @@ ngx_http_vhost_traffic_status_prom_display_set_upstream_group(ngx_http_request_t
                 if (node != NULL) {
                     vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
 #if nginx_version > 1007001
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, vtsn);
 #else
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &peer->name);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, vtsn,
+                                                                                        &peer->name);
 #endif
 
                 } else {
 #if nginx_version > 1007001
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, NULL);
 #else
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL, &peer->name);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, NULL,
+                                                                                         &peer->name);
 #endif
                 }
 
@@ -379,52 +486,34 @@ not_supported:
                 if (node != NULL) {
                     vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
 #if nginx_version > 1007001
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, vtsn);
 #else
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &us[j].addrs->name);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, vtsn,
+                                                                                        &us[j].addrs->name);
 #endif
 
                 } else {
 #if nginx_version > 1007001
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, NULL);
 #else
-                    buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL, &us[j].addrs->name);
+                    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_node(r, buf, &usn, &uscf->host, NULL,
+                                                                                        &us[j].addrs->name);
 #endif
                 }
 
                 p = dst.data;
             }
 
-            if (s == buf) {
-                buf = o;
-
-            } else {
-                buf--;
-                buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
-                buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
-            }
         }
     }
 
     /* alones */
-    o = buf;
 
     ngx_str_set(&key, "::nogroups");
+    // TODO key set here
+//    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S, &key);
 
-    buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S, &key);
-
-    s = buf;
-
-    buf = ngx_http_vhost_traffic_status_display_set_upstream_alone(r, buf, ctx->rbtree->root);
-
-    if (s == buf) {
-        buf = o;
-
-    } else {
-        buf--;
-        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
-        buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
-    }
+    buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(r, buf, ctx->rbtree->root, &key);
 
     return buf;
 }

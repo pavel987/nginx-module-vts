@@ -63,44 +63,27 @@
     "nginx_filter_cache{status=\"hit\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_cache{status=\"scarce\",filter=\"%V\",filterName=\"%V\"} %uA\n"
 
-#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM "{\"server\":\"%V\","  \
-    "\"requestCounter\":%uA,"                                                  \
-    "\"inBytes\":%uA,"                                                         \
-    "\"outBytes\":%uA,"                                                        \
-    "\"responses\":{"                                                          \
-    "\"1xx\":%uA,"                                                             \
-    "\"2xx\":%uA,"                                                             \
-    "\"3xx\":%uA,"                                                             \
-    "\"4xx\":%uA,"                                                             \
-    "\"5xx\":%uA"                                                              \
-    "},"                                                                       \
-    "\"requestMsec\":%M,"                                                      \
-    "\"requestMsecs\":{"                                                       \
-    "\"times\":[%s],"                                                          \
-    "\"msecs\":[%s]"                                                           \
-    "},"                                                                       \
-    "\"responseMsec\":%M,"                                                     \
-    "\"responseMsecs\":{"                                                      \
-    "\"times\":[%s],"                                                          \
-    "\"msecs\":[%s]"                                                           \
-    "},"                                                                       \
-    "\"weight\":%ui,"                                                          \
-    "\"maxFails\":%ui,"                                                        \
-    "\"failTimeout\":%T,"                                                      \
-    "\"backup\":%s,"                                                           \
-    "\"down\":%s,"                                                             \
-    "\"overCounts\":{"                                                         \
-    "\"maxIntegerSize\":%s,"                                                   \
-    "\"requestCounter\":%uA,"                                                  \
-    "\"inBytes\":%uA,"                                                         \
-    "\"outBytes\":%uA,"                                                        \
-    "\"1xx\":%uA,"                                                             \
-    "\"2xx\":%uA,"                                                             \
-    "\"3xx\":%uA,"                                                             \
-    "\"4xx\":%uA,"                                                             \
-    "\"5xx\":%uA"                                                              \
-    "}"                                                                        \
-    "},"
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM \
+    "# HELP nginx_upstream_bytes request/response bytes\n" \
+    "# TYPE nginx_upstream_bytes counter\n" \
+    "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\",direction=\"in\"} %uA\n" \
+    "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\"direction=\"out\"} %uA\n" \
+    "# HELP nginx_upstream_requestMsec average of request processing times in milliseconds\n" \
+    "# TYPE nginx_upstream_requestMsec gauge\n" \
+    "nginx_upstream_requestMsec{upstream=\"%V\",backend=\"%V\"} %uA\n" \
+    "# HELP nginx_upstream_responseMsec average of only upstream/backend response processing times in milliseconds\n" \
+    "# TYPE nginx_upstream_responseMsec gauge\n" \
+    "nginx_upstream_responseMsec{upstream=\"%V\",backend=\"%V\"} %uA\n" \
+    "# HELP nginx_upstream_requests requests counter\n" \
+    "# TYPE nginx_upstream_requests counter\n" \
+    "nginx_upstream_requests{upstream=\"%V\",backend=\"%V\"} %uA\n" \
+    "# HELP nginx_upstream_response upstream response breakdown\n" \
+    "# TYPE nginx_upstream_response counter\n" \
+    "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"1xx\"} %uA\n" \
+    "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"2xx\"} %uA\n" \
+    "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"3xx\"} %uA\n" \
+    "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"4xx\"} %uA\n" \
+    "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"5xx\"} %uA\n"
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
                                                   u_char *buf);
@@ -115,6 +98,18 @@ u_char *ngx_http_vhost_traffic_status_prom_display_set_filter(
         ngx_http_request_t *r, u_char *buf,
         ngx_rbtree_node_t *node);
 
+u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_node(
+        ngx_http_request_t *r, u_char *buf,
+        ngx_http_upstream_server_t *us,
+        ngx_str_t *upstream_name,
+#if nginx_version > 1007001
+        ngx_http_vhost_traffic_status_node_t *vtsn
+#else
+        ngx_http_vhost_traffic_status_node_t *vtsn, ngx_str_t *name
+#endif
+);
+u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(
+        ngx_http_request_t *r, u_char *buf, ngx_rbtree_node_t *node, ngx_str_t *upstream_name);
 u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_group(
         ngx_http_request_t *r, u_char *buf);
 
