@@ -25,7 +25,6 @@
     "nginx_server_requests{code=\"3xx\",host=\"%V\"} %uA\n" \
     "nginx_server_requests{code=\"4xx\",host=\"%V\"} %uA\n" \
     "nginx_server_requests{code=\"5xx\",host=\"%V\"} %uA\n" \
-    "nginx_server_requests{code=\"total\",host=\"%V\"} %uA\n" \
     "# HELP nginx_server_bytes request/response bytes\n" \
     "# TYPE nginx_server_bytes counter\n" \
     "nginx_server_bytes{direction=\"in\",host=\"%V\"} %uA\n" \
@@ -33,6 +32,21 @@
     "# HELP nginx_server_requestMsec average of request processing times in milliseconds\n" \
     "# TYPE nginx_server_requestMsec gauge\n" \
     "nginx_server_requestMsec{host=\"%V\"} %M\n"
+
+#if (NGX_HTTP_CACHE)
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE \
+    "# HELP nginx_server_cache cache hits/misses for server\n" \
+    "# TYPE nginx_server_cache counter\n" \
+    "nginx_server_cache{host=\"%V\",status=\"miss\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"bypass\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"expired\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"stale\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"updating\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"revalidated\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"hit\"} %uA\n" \
+    "nginx_server_cache{host=\"%V\",status=\"scarce\"} %uA\n"
+
+#endif
 
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER \
     "# HELP nginx_filter_bytes request/response bytes\n" \
@@ -47,10 +61,10 @@
     "nginx_filter_requests{code=\"3xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"4xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"5xx\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
-    "nginx_filter_requests{code=\"total\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "# TYPE nginx_filter_requestMsec gauge\n" \
     "nginx_filter_requestMsec{filter=\"%V\",filterName=\"%V\"} %uA\n"
 
+#if (NGX_HTTP_CACHE)
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER_CACHE \
     "# HELP nginx_filter_cache filter cache requests\n" \
     "# TYPE nginx_filter_cache counter\n" \
@@ -62,6 +76,7 @@
     "nginx_filter_cache{status=\"revalidated\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_cache{status=\"hit\",filter=\"%V\",filterName=\"%V\"} %uA\n" \
     "nginx_filter_cache{status=\"scarce\",filter=\"%V\",filterName=\"%V\"} %uA\n"
+#endif
 
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM \
     "# HELP nginx_upstream_bytes request/response bytes\n" \
@@ -84,6 +99,29 @@
     "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"3xx\"} %uA\n" \
     "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"4xx\"} %uA\n" \
     "nginx_upstream_response{upstream=\"%V\",backend=\"%V\",code=\"5xx\"} %uA\n"
+
+#if (NGX_HTTP_CACHE)
+#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_CACHE \
+    "# HELP nginx_cache_size cache zones request/response bytes\n" \
+    "# TYPE nginx_cache_size gauge\n" \
+    "nginx_cache_size{cache_zone=\"%V\",cache_size=\"max\"} %uA\n" \
+    "nginx_cache_size{cache_zone=\"%V\",cache_size=\"used\"} %uA\n" \
+    "# HELP nginx_cache_bytes cache zones request/response bytes\n" \
+    "# TYPE nginx_cache_bytes counter\n" \
+    "nginx_cache_bytes{cache_zone=\"%V\",direction=\"in\"} %uA\n" \
+    "nginx_cache_bytes{cache_zone=\"%V\",direction=\"out\"} %uA\n" \
+    "# HELP nginx_cache_requests cache hits/misses for cache zones\n" \
+    "# TYPE nginx_cache_requests counter\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"miss\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"bypass\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"expired\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"stale\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"updating\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"revalidated\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"hit\"} %uA\n" \
+    "nginx_cache_requests{cache_zone=\"%V\",status=\"scarce\"} %uA\n"
+
+#endif
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set(ngx_http_request_t *r,
                                                   u_char *buf);
@@ -112,6 +150,15 @@ u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(
         ngx_http_request_t *r, u_char *buf, ngx_rbtree_node_t *node, ngx_str_t *upstream_name);
 u_char *ngx_http_vhost_traffic_status_prom_display_set_upstream_group(
         ngx_http_request_t *r, u_char *buf);
+#if (NGX_HTTP_CACHE)
+u_char *ngx_http_vhost_traffic_status_prom_display_set_cache_node(
+    ngx_http_request_t *r, u_char *buf,
+    ngx_http_vhost_traffic_status_node_t *vtsn);
+u_char *ngx_http_vhost_traffic_status_prom_display_set_cache(
+    ngx_http_request_t *r, u_char *buf,
+    ngx_rbtree_node_t *node);
+#endif
+
 
 u_char *ngx_http_vhost_traffic_status_prom_display_set_main(
         ngx_http_request_t *r, u_char *buf);
