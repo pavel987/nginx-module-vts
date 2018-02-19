@@ -118,14 +118,14 @@ ngx_http_vhost_traffic_status_prom_display_set_server_node(
 
 #if (NGX_HTTP_CACHE)
     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE,
-                      &key, vtsn->stat_cache_miss_counter,
-                      &key, vtsn->stat_cache_bypass_counter,
-                      &key, vtsn->stat_cache_expired_counter,
-                      &key, vtsn->stat_cache_stale_counter,
-                      &key, vtsn->stat_cache_updating_counter,
-                      &key, vtsn->stat_cache_revalidated_counter,
-                      &key, vtsn->stat_cache_hit_counter,
-                      &key, vtsn->stat_cache_scarce_counter);
+                      &dst, vtsn->stat_cache_miss_counter,
+                      &dst, vtsn->stat_cache_bypass_counter,
+                      &dst, vtsn->stat_cache_expired_counter,
+                      &dst, vtsn->stat_cache_stale_counter,
+                      &dst, vtsn->stat_cache_updating_counter,
+                      &dst, vtsn->stat_cache_revalidated_counter,
+                      &dst, vtsn->stat_cache_hit_counter,
+                      &dst, vtsn->stat_cache_scarce_counter);
 #endif
 
     return buf;
