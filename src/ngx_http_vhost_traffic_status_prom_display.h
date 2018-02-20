@@ -6,7 +6,7 @@
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN  \
     "# HELP nginx_server_uptime nginx uptime and server info\n" \
     "# TYPE nginx_server_uptime counter\n" \
-    "nginx_server_uptime{hostname=\"%V\",version=\"%s\"} %f\n" \
+    "nginx_server_uptime{hostname=\"%V\",version=\"%s\"} %.1f\n" \
     "# HELP nginx_server_connections nginx connections\n" \
     "# TYPE nginx_server_connections gauge\n" \
     "nginx_server_connections{status=\"accepted\"} %uA\n" \
@@ -29,9 +29,9 @@
     "# TYPE nginx_server_bytes counter\n" \
     "nginx_server_bytes{direction=\"in\",host=\"%V\"} %uA\n" \
     "nginx_server_bytes{direction=\"out\",host=\"%V\"} %uA\n" \
-    "# HELP nginx_server_requestMsec average of request processing times in milliseconds\n" \
-    "# TYPE nginx_server_requestMsec gauge\n" \
-    "nginx_server_requestMsec{host=\"%V\"} %M\n"
+    "# HELP nginx_server_request_sec average of request processing times in seconds\n" \
+    "# TYPE nginx_server_request_sec gauge\n" \
+    "nginx_server_request_sec{host=\"%V\"} %.3f\n"
 
 #if (NGX_HTTP_CACHE)
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE \
@@ -53,7 +53,6 @@
     "# TYPE nginx_filter_bytes counter\n" \
     "nginx_filter_bytes{direction=\"in\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
     "nginx_filter_bytes{direction=\"out\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
-    "# HELP nginx_filter_requestMsec average of request processing times in milliseconds\n" \
     "# HELP nginx_filter_requests requests counter\n" \
     "# TYPE nginx_filter_requests counter\n" \
     "nginx_filter_requests{code=\"1xx\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
@@ -61,8 +60,9 @@
     "nginx_filter_requests{code=\"3xx\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"4xx\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
     "nginx_filter_requests{code=\"5xx\",filter=\"%V\",filter_name=\"%V\"} %uA\n" \
-    "# TYPE nginx_filter_requestMsec gauge\n" \
-    "nginx_filter_requestMsec{filter=\"%V\",filter_name=\"%V\"} %uA\n"
+    "# HELP nginx_filter_request_sec average of request processing times in seconds\n" \
+    "# TYPE nginx_filter_request_sec gauge\n" \
+    "nginx_filter_request_sec{filter=\"%V\",filter_name=\"%V\"} %.3f\n"
 
 #if (NGX_HTTP_CACHE)
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER_CACHE \
@@ -83,12 +83,12 @@
     "# TYPE nginx_upstream_bytes counter\n" \
     "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\",direction=\"in\"} %uA\n" \
     "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\"direction=\"out\"} %uA\n" \
-    "# HELP nginx_upstream_requestMsec average of request processing times in milliseconds\n" \
-    "# TYPE nginx_upstream_requestMsec gauge\n" \
-    "nginx_upstream_requestMsec{upstream=\"%V\",backend=\"%V\"} %uA\n" \
-    "# HELP nginx_upstream_responseMsec average of only upstream/backend response processing times in milliseconds\n" \
-    "# TYPE nginx_upstream_responseMsec gauge\n" \
-    "nginx_upstream_responseMsec{upstream=\"%V\",backend=\"%V\"} %uA\n" \
+    "# HELP nginx_upstream_request_sec average of request processing times in seconds\n" \
+    "# TYPE nginx_upstream_request_sec gauge\n" \
+    "nginx_upstream_request_sec{upstream=\"%V\",backend=\"%V\"} %.3f\n" \
+    "# HELP nginx_upstream_response_sec average of only upstream/backend response processing times in seconds\n" \
+    "# TYPE nginx_upstream_response_sec gauge\n" \
+    "nginx_upstream_response_sec{upstream=\"%V\",backend=\"%V\"} %.3f\n" \
     "# HELP nginx_upstream_requests requests counter\n" \
     "# TYPE nginx_upstream_requests counter\n" \
     "nginx_upstream_requests{upstream=\"%V\",backend=\"%V\"} %uA\n" \

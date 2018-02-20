@@ -11,8 +11,7 @@ ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
 {
     ngx_atomic_int_t                           ap, hn, ac, rq, rd, wr, wa;
     ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
-//    ngx_http_vhost_traffic_status_shm_info_t  *shm_info;
-//
+
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
     ap = *ngx_stat_accepted;
@@ -22,13 +21,6 @@ ngx_http_vhost_traffic_status_prom_display_set_main(ngx_http_request_t *r,
     rd = *ngx_stat_reading;
     wr = *ngx_stat_writing;
     wa = *ngx_stat_waiting;
-
-//    shm_info = ngx_pcalloc(r->pool, sizeof(ngx_http_vhost_traffic_status_shm_info_t));
-//    if (shm_info == NULL) {
-//        return buf;
-//    }
-
-//    ngx_http_vhost_traffic_status_shm_info(r, shm_info);
 
     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN,
                       &ngx_cycle->hostname, NGINX_VERSION, (ngx_current_msec - vtscf->start_msec) / 1000.0,
@@ -112,9 +104,9 @@ ngx_http_vhost_traffic_status_prom_display_set_server_node(
                       &dst, vtsn->stat_5xx_counter,
                       &dst, vtsn->stat_in_bytes,
                       &dst, vtsn->stat_out_bytes,
-                      &dst, ngx_http_vhost_traffic_status_node_time_queue_average(
+                      &dst, (double)ngx_http_vhost_traffic_status_node_time_queue_average(
                               &vtsn->stat_request_times, vtscf->average_method,
-                              vtscf->average_period));
+                              vtscf->average_period) / 1000.0);
 
 #if (NGX_HTTP_CACHE)
     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_SERVER_CACHE,
@@ -197,9 +189,9 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
                                       &key, &filter_name, vtsn->stat_3xx_counter,
                                       &key, &filter_name, vtsn->stat_4xx_counter,
                                       &key, &filter_name, vtsn->stat_5xx_counter,
-                                      &key, &filter_name, ngx_http_vhost_traffic_status_node_time_queue_average(
+                                      &key, &filter_name, (double)ngx_http_vhost_traffic_status_node_time_queue_average(
                                       &vtsn->stat_request_times, vtscf->average_method,
-                                      vtscf->average_period));
+                                      vtscf->average_period) / 1000.0);
 
 #if (NGX_HTTP_CACHE)
                     buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_FILTER_CACHE,
@@ -271,10 +263,10 @@ ngx_http_vhost_traffic_status_prom_display_set_upstream_node(ngx_http_request_t 
                           upstream_name, &key, vtsn->stat_out_bytes,
                           upstream_name, &key, ngx_http_vhost_traffic_status_node_time_queue_average(
                                   &vtsn->stat_request_times, vtscf->average_method,
-                                  vtscf->average_period),
+                                  vtscf->average_period) / 1000.0,
                           upstream_name, &key, ngx_http_vhost_traffic_status_node_time_queue_average(
                                   &vtsn->stat_upstream.response_times, vtscf->average_method,
-                                  vtscf->average_period),
+                                  vtscf->average_period) / 1000.0,
                           upstream_name, &key, vtsn->stat_request_counter,
                           upstream_name, &key, vtsn->stat_1xx_counter,
                           upstream_name, &key, vtsn->stat_2xx_counter,
@@ -286,8 +278,8 @@ ngx_http_vhost_traffic_status_prom_display_set_upstream_node(ngx_http_request_t 
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_UPSTREAM,
                           upstream_name, &key, (ngx_atomic_uint_t) 0,
                           upstream_name, &key, (ngx_atomic_uint_t) 0,
-                          upstream_name, &key, (ngx_atomic_uint_t) 0,
-                          upstream_name, &key, (ngx_atomic_uint_t) 0,
+                          upstream_name, &key, 0.0,
+                          upstream_name, &key, 0.0,
                           upstream_name, &key, (ngx_atomic_uint_t) 0,
                           upstream_name, &key, (ngx_atomic_uint_t) 0,
                           upstream_name, &key, (ngx_atomic_uint_t) 0,
