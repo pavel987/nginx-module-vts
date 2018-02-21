@@ -104,7 +104,7 @@ ngx_http_vhost_traffic_status_prom_display_set_server_node(
                       &dst, vtsn->stat_5xx_counter,
                       &dst, vtsn->stat_in_bytes,
                       &dst, vtsn->stat_out_bytes,
-                      &dst, (double)ngx_http_vhost_traffic_status_node_time_queue_average(
+                      &dst, ngx_http_vhost_traffic_status_node_time_queue_average(
                               &vtsn->stat_request_times, vtscf->average_method,
                               vtscf->average_period) / 1000.0);
 
@@ -189,7 +189,7 @@ ngx_http_vhost_traffic_status_prom_display_set_filter(ngx_http_request_t *r,
                                       &key, &filter_name, vtsn->stat_3xx_counter,
                                       &key, &filter_name, vtsn->stat_4xx_counter,
                                       &key, &filter_name, vtsn->stat_5xx_counter,
-                                      &key, &filter_name, (double)ngx_http_vhost_traffic_status_node_time_queue_average(
+                                      &key, &filter_name, ngx_http_vhost_traffic_status_node_time_queue_average(
                                       &vtsn->stat_request_times, vtscf->average_method,
                                       vtscf->average_period) / 1000.0);
 
@@ -387,9 +387,6 @@ ngx_http_vhost_traffic_status_prom_display_set_upstream_group(ngx_http_request_t
 
             type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UG;
 
-            // TODO host comes from here
-//            buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_S,
-//                              &uscf->host);
             zone = 0;
 
 #if (NGX_HTTP_UPSTREAM_ZONE)
@@ -512,7 +509,6 @@ not_supported:
     /* alones */
 
     ngx_str_set(&key, "::nogroups");
-    // TODO key set here
 
     buf = ngx_http_vhost_traffic_status_prom_display_set_upstream_alone(r, buf, ctx->rbtree->root, &key);
 

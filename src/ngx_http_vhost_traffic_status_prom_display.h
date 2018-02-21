@@ -2,7 +2,6 @@
 #ifndef _NGX_HTTP_VTS_PROM_DISPLAY_H_INCLUDED_
 #define _NGX_HTTP_VTS_PROM_DISPLAY_H_INCLUDED_
 
-#define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_HEADER   "# test\n"
 #define NGX_HTTP_VHOST_TRAFFIC_STATUS_PROM_FMT_MAIN  \
     "# HELP nginx_server_uptime nginx uptime and server info\n" \
     "# TYPE nginx_server_uptime counter\n" \
@@ -82,7 +81,7 @@
     "# HELP nginx_upstream_bytes request/response bytes\n" \
     "# TYPE nginx_upstream_bytes counter\n" \
     "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\",direction=\"in\"} %uA\n" \
-    "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\"direction=\"out\"} %uA\n" \
+    "nginx_upstream_bytes{upstream=\"%V\",backend=\"%V\",direction=\"out\"} %uA\n" \
     "# HELP nginx_upstream_request_sec average of request processing times in seconds\n" \
     "# TYPE nginx_upstream_request_sec gauge\n" \
     "nginx_upstream_request_sec{upstream=\"%V\",backend=\"%V\"} %.3f\n" \
@@ -164,3 +163,5 @@ u_char *ngx_http_vhost_traffic_status_prom_display_set_main(
         ngx_http_request_t *r, u_char *buf);
 
 #endif /* _NGX_HTTP_VTS_PROM_DISPLAY_H_INCLUDED_ */
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -397,7 +397,6 @@ ngx_http_vhost_traffic_status_display_handler_default(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    // TODO add function to generate prometheus display
     if (format == NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSON) {
         shpool = (ngx_slab_pool_t *) vtscf->shm_zone->shm.addr;
         ngx_shmtx_lock(&shpool->mutex);
@@ -514,7 +513,6 @@ ngx_http_vhost_traffic_status_display_get_size(ngx_http_request_t *r,
     size = 0;
 
     switch (format) {
-    // FIXME is this even remotely correct? I have no idea what it's for
     case NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_PROM:
     case NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSON:
     case NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSONP:
